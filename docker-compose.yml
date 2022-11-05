@@ -1,0 +1,80 @@
+version: "3.7"
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    restart: on-failure
+    ports:
+      - "2181:2181"
+    networks:
+      - app-network
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    restart: on-failure
+    ports:
+      - "9092:9092"
+      - "8082:8082"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CONNECT_BOOTSTRAP_SERVERS: localhost:9092
+      KAFKA_CONNECT_REST_PORT: 8082
+      KAFKA_CONNECT_REST_ADVERTISED_HOST_NAME: "localhost"
+    depends_on:
+      - zookeeper
+    networks:
+      - app-network
+
+  producer-api:
+    container_name: producer-api
+    build:
+      context: producer-api
+      dockerfile: ./deployment/dockerfiles/producer.Dockerfile
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    depends_on:
+      - zookeeper
+      - kafka
+    volumes:
+      - .:/producer-api/
+    networks:
+      - app-network
+
+  consumer:
+    container_name: consumer
+    build:
+      context: consumer
+      dockerfile: ./deployment/dockerfiles/consumer.Dockerfile
+    restart: on-failure
+    depends_on:
+      - zookeeper
+      - kafka
+    networks:
+      - app-network
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer-data:/data
+    ports:
+      - 9000:9000
+    networks:
+      - app-network
+
+volumes:
+  portainer-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
