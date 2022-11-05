@@ -16,8 +16,8 @@ Body
 {
     "id":2,
     "fio":"Sanzhar Anarbay",
-    "group":"IS-201M",
-    "major":"IS",
+    "group":"Group-1",
+    "major":"Information Systems",
     "gpa":3.45
 }
 
